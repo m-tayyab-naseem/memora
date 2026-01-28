@@ -44,7 +44,10 @@ export function VaultCard({ vault, onDeleted }: VaultCardProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="text-sm text-slate-600">
-          <p>{vault.members.length} member{vault.members.length !== 1 ? "s" : ""}</p>
+          <p>
+            {vault.memberCount ?? vault.members?.length ?? 0} member
+            {(vault.memberCount ?? vault.members?.length ?? 0) !== 1 ? "s" : ""}
+          </p>
         </div>
         <div className="flex gap-2">
           <Link href={`/vault/${vault.id}`} className="flex-1">

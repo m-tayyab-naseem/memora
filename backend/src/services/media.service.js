@@ -1,17 +1,24 @@
 const MediaItem = require('../models/MediaItem');
 const Vault = require('../models/Vault');
-const { s3, bucketName } = require('../config/storage');
+const { s3Client, bucketName } = require('../config/storage');
+const { PutObjectCommand, GetObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 const path = require('path');
 const { NotFoundError } = require('../utils/errors');
 
+/**
+ * Uploads media to Cloudflare R2 and creates a database record.
+ */
 const uploadMedia = async (vaultId, userId, file, description) => {
+    // 1. Generate a unique key for the file in the bucket
     const fileKey = `vaults/${vaultId}/${uuidv4()}${path.extname(file.originalname)}`;
 
+    // 2. Read file content from temp storage
     const fileContent = fs.readFileSync(file.path);
 
-    // Upload to S3
+    // 3. Upload to R2 using PutObjectCommand (SDK v3 style)
     const uploadParams = {
         Bucket: bucketName,
         Key: fileKey,
@@ -19,16 +26,16 @@ const uploadMedia = async (vaultId, userId, file, description) => {
         ContentType: file.mimetype
     };
 
-    await s3.upload(uploadParams).promise();
+    await s3Client.send(new PutObjectCommand(uploadParams));
 
-    // Determine media type
+    // 4. Determine media type (image or video)
     const mediaType = file.mimetype.startsWith('image/') ? 'image' : 'video';
 
-    // Create media item
+    // 5. Create media item in MongoDB
     const mediaItem = new MediaItem({
         vaultId,
         mediaType,
-        mediaUrl: fileKey,
+        mediaUrl: fileKey, // Store the relative key, not the full URL
         fileName: file.originalname,
         fileSize: file.size,
         mimeType: file.mimetype,
@@ -38,15 +45,18 @@ const uploadMedia = async (vaultId, userId, file, description) => {
 
     await mediaItem.save();
 
-    // Update vault media count
+    // 6. Update vault media count
     await Vault.findByIdAndUpdate(vaultId, { $inc: { mediaCount: 1 } });
 
-    // Delete temp file
+    // 7. Clean up temp file
     fs.unlinkSync(file.path);
 
     return mediaItem;
 };
 
+/**
+ * Retrieves a list of media for a vault.
+ */
 const getMedia = async (vaultId, filters = {}) => {
     const { page = 1, limit = 50, type } = filters;
     const skip = (page - 1) * limit;
@@ -64,8 +74,21 @@ const getMedia = async (vaultId, filters = {}) => {
 
     const total = await MediaItem.countDocuments(query);
 
+    // Generate signed URLs for all items in the list
+    const mediaWithUrls = await Promise.all(media.map(async (item) => {
+        const command = new GetObjectCommand({
+            Bucket: bucketName,
+            Key: item.mediaUrl,
+        });
+        const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+        return {
+            ...item.toObject(),
+            signedUrl
+        };
+    }));
+
     return {
-        media,
+        media: mediaWithUrls,
         pagination: {
             page: parseInt(page),
             limit: parseInt(limit),
@@ -75,6 +98,9 @@ const getMedia = async (vaultId, filters = {}) => {
     };
 };
 
+/**
+ * Retrieves a single media item and generates a temporary signed URL for viewing.
+ */
 const getMediaItem = async (mediaId) => {
     const media = await MediaItem.findById(mediaId)
         .populate('uploadedBy', 'name email');
@@ -83,12 +109,12 @@ const getMediaItem = async (mediaId) => {
         throw new NotFoundError('Media not found');
     }
 
-    // Generate signed URL for access
-    const signedUrl = s3.getSignedUrl('getObject', {
+    const command = new GetObjectCommand({
         Bucket: bucketName,
         Key: media.mediaUrl,
-        Expires: 3600 // 1 hour
     });
+
+    const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
 
     return {
         ...media.toObject(),
@@ -96,8 +122,34 @@ const getMediaItem = async (mediaId) => {
     };
 };
 
+/**
+ * Deletes media from R2 and database.
+ */
+const deleteMedia = async (vaultId, mediaId) => {
+    const media = await MediaItem.findOne({ _id: mediaId, vaultId });
+    if (!media) {
+        throw new NotFoundError('Media not found');
+    }
+
+    // 1. Delete from R2
+    const deleteParams = {
+        Bucket: bucketName,
+        Key: media.mediaUrl
+    };
+    await s3Client.send(new DeleteObjectCommand(deleteParams));
+
+    // 2. Delete from DB
+    await MediaItem.findByIdAndDelete(mediaId);
+
+    // 3. Update vault media count
+    await Vault.findByIdAndUpdate(vaultId, { $inc: { mediaCount: -1 } });
+
+    return true;
+};
+
 module.exports = {
     uploadMedia,
     getMedia,
-    getMediaItem
+    getMediaItem,
+    deleteMedia
 };

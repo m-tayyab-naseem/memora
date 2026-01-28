@@ -75,3 +75,26 @@ exports.getMediaItem = async (req, res, next) => {
         next(error);
     }
 };
+
+exports.deleteMedia = async (req, res, next) => {
+    try {
+        await mediaService.deleteMedia(req.params.vaultId, req.params.mediaId);
+
+        await auditService.log({
+            vaultId: req.params.vaultId,
+            actorId: req.user.userId,
+            action: 'media_deleted',
+            targetId: req.params.mediaId,
+            targetType: 'media',
+            ipAddress: req.ip,
+            userAgent: req.get('user-agent')
+        });
+
+        res.json({
+            success: true,
+            message: 'Media deleted successfully'
+        });
+    } catch (error) {
+        next(error);
+    }
+};

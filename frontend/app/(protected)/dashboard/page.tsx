@@ -19,6 +19,7 @@ export default function DashboardPage() {
       try {
         const data = await apiClient.getVaults();
         setVaults(data);
+
       } catch (err) {
         setError("Failed to load vaults");
         console.error(err);

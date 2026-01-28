@@ -1,4 +1,4 @@
-import { AuthResponse, ApiError, ApiResponse, Vault, MediaItem } from "./types";
+import { AuthResponse, ApiError, ApiResponse, Vault, MediaItem, User } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1";
 
@@ -87,13 +87,15 @@ class ApiClient {
     this.clearToken();
   }
 
-  async getCurrentUser(): Promise<any> {
-    return this.request("/auth/me", { method: "GET" });
+  async getCurrentUser(): Promise<User> {
+    const data = await this.request<{ user: User }>("/auth/me", { method: "GET" });
+    return data.user;
   }
 
   // Vault endpoints
   async getVaults(): Promise<Vault[]> {
     const data = await this.request<{ vaults: Vault[] }>("/vaults", { method: "GET" });
+    console.log(data);
     return data.vaults.map(v => ({ ...v, id: v.id || v._id }));
   }
 
@@ -117,13 +119,19 @@ class ApiClient {
   }
 
   // Media endpoints
-  async getMediaItems(vaultId: string): Promise<any[]> {
-    const data = await this.request<{ media: any[] }>(`/vaults/${vaultId}/media`, { method: "GET" });
-    return data.media.map(m => ({ ...m, id: m.id || m._id }));
+  async getMediaItems(vaultId: string): Promise<MediaItem[]> {
+    const data = await this.request<{ media: any[] }>(`/media/${vaultId}`, { method: "GET" });
+    return data.media.map(m => ({
+      ...m,
+      id: m.id || m._id,
+      url: m.signedUrl || m.mediaUrl, // Prefer signedUrl from backend
+      type: m.mediaType === "image" ? "photo" : "video",
+      uploadedAt: m.createdAt
+    }));
   }
 
   async deleteMedia(vaultId: string, mediaId: string): Promise<void> {
-    return this.request(`/vaults/${vaultId}/media/${mediaId}`, {
+    return this.request(`/media/${vaultId}/${mediaId}`, {
       method: "DELETE",
     });
   }
@@ -135,7 +143,7 @@ class ApiClient {
       headers["Authorization"] = `Bearer ${token}`;
     }
 
-    const response = await fetch(`${API_BASE_URL}/vaults/${vaultId}/media`, {
+    const response = await fetch(`${API_BASE_URL}/media/${vaultId}/upload`, {
       method: "POST",
       headers,
       body: formData,
@@ -145,9 +153,15 @@ class ApiClient {
       throw new Error("Upload failed");
     }
 
-    const result: ApiResponse<any> = await response.json();
-    const media = result.data;
-    return { ...media, id: media.id || media._id };
+    const result: ApiResponse<{ media: any }> = await response.json();
+    const media = result.data.media;
+    return {
+      ...media,
+      id: media.id || media._id,
+      url: media.signedUrl || media.mediaUrl,
+      type: media.mediaType === "image" ? "photo" : "video",
+      uploadedAt: media.createdAt
+    };
   }
 }
 

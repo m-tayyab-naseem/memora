@@ -35,6 +35,12 @@ export default function VaultDetailPage() {
     fetchVault();
   }, [vaultId]);
 
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const handleUploadSuccess = () => {
+    setRefreshTrigger((prev) => prev + 1);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -78,17 +84,20 @@ export default function VaultDetailPage() {
           <p className="text-slate-600">{vault.description}</p>
         )}
         <div className="mt-4 text-sm text-slate-600">
-          <p>{vault.members.length} member{vault.members.length !== 1 ? "s" : ""}</p>
+          <p>
+            {vault.memberCount || vault.members?.length || 0} member
+            {(vault.memberCount || vault.members?.length || 0) !== 1 ? "s" : ""}
+          </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
-          <MediaUpload vaultId={vaultId} />
-          <MediaGallery vaultId={vaultId} />
+          <MediaUpload vaultId={vaultId} onUploadSuccess={handleUploadSuccess} />
+          <MediaGallery vaultId={vaultId} refreshTrigger={refreshTrigger} />
         </div>
         <div>
-          <VaultMembers members={vault.members} />
+          <VaultMembers members={vault.members || []} />
         </div>
       </div>
     </div>

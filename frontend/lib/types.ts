@@ -23,14 +23,19 @@ export interface VaultMember {
 
 export interface Vault {
   _id: string;
-  id?: string;
+  id: string;
   name: string;
   description?: string;
   ownerId: string;
-  members: VaultMember[];
+  members?: VaultMember[];
+  memberCount?: number;
+  mediaCount?: number;
+  settings?: Record<string, any>;
   userRole?: UserRole;
+  isDeleted?: boolean;
   createdAt: string;
   updatedAt: string;
+  __v?: number;
 }
 
 export interface ApiResponse<T> {

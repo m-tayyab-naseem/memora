@@ -42,4 +42,16 @@ router.get('/:vaultId/:mediaId',
     mediaController.getMediaItem
 );
 
+router.delete('/:vaultId/:mediaId',
+    authenticate,
+    [
+        param('vaultId').isMongoId().withMessage('Invalid vault ID'),
+        param('mediaId').isMongoId().withMessage('Invalid media ID')
+    ],
+    validate,
+    checkVaultAccess,
+    checkVaultRole(['owner', 'contributor']),
+    mediaController.deleteMedia
+);
+
 module.exports = router;
