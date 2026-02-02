@@ -16,14 +16,16 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Trash2, Play } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 
 interface MediaCardProps {
   media: MediaItem;
   vaultId: string;
   onDeleted: (mediaId: string) => void;
+  onOpen?: () => void;
 }
 
-export function MediaCard({ media, vaultId, onDeleted }: MediaCardProps) {
+export function MediaCard({ media, vaultId, onDeleted, onOpen }: MediaCardProps) {
   const [loading, setLoading] = useState(false);
 
   const handleDelete = async () => {
@@ -39,11 +41,14 @@ export function MediaCard({ media, vaultId, onDeleted }: MediaCardProps) {
   };
 
   return (
-    <div className="group relative aspect-square rounded-lg overflow-hidden bg-slate-100 border border-slate-200">
+    <div
+      className="group relative aspect-square rounded-lg overflow-hidden bg-slate-100 border border-slate-200 cursor-pointer"
+      onClick={onOpen}
+    >
       {media.type === "photo" ? (
         <Image
           src={media.url || "/placeholder.svg"}
-          alt="Gallery item"
+          alt={media.caption || "Gallery item"}
           fill
           className="object-cover"
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
@@ -60,36 +65,50 @@ export function MediaCard({ media, vaultId, onDeleted }: MediaCardProps) {
         </>
       )}
 
-      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-2">
-        <p className="text-xs text-white truncate flex-1">
-          {media.type === "photo" ? "Photo" : "Video"}
-        </p>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button
-              size="icon"
-              variant="outline"
-              className="h-8 w-8 bg-white/90 hover:bg-white"
-              disabled={loading}
-            >
+      {/* Caption overlay on hover */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-end justify-between p-3">
+        <Button
+          size="icon"
+          variant="outline"
+          className="h-8 w-8 bg-white/90 hover:bg-white"
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
+          disabled={loading}
+        >
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
               <Trash2 className="h-4 w-4 text-red-600" />
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete Media</AlertDialogTitle>
-              <AlertDialogDescription>
-                This media will be permanently deleted. This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <div className="flex gap-3 justify-end">
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDelete} className="bg-red-600">
-                Delete
-              </AlertDialogAction>
-            </div>
-          </AlertDialogContent>
-        </AlertDialog>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Media</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This media will be permanently deleted. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="flex gap-3 justify-end">
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-red-600">
+                  Delete
+                </AlertDialogAction>
+              </div>
+            </AlertDialogContent>
+          </AlertDialog>
+        </Button>
+
+        {/* Info at bottom */}
+        <div className="w-full text-white text-xs">
+          {media.caption && <p className="font-medium truncate mb-1">{media.caption}</p>}
+          <p className="text-slate-200">
+            {formatDistanceToNow(new Date(media.memoryDate || media.uploadedAt), {
+              addSuffix: true,
+            })}
+          </p>
+          {media.uploadedByName && (
+            <p className="text-slate-300">{media.uploadedByName}</p>
+          )}
+        </div>
       </div>
     </div>
   );

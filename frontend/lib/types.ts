@@ -51,7 +51,12 @@ export interface MediaItem {
   url: string;
   thumbnailUrl?: string;
   uploadedBy: string;
+  uploadedByName?: string;
+  uploadedByRole?: UserRole;
   uploadedAt: string;
+  memoryDate?: string; // When the memory actually occurred
+  caption?: string;
+  tags?: string[];
   size: number;
   metadata?: {
     width?: number;

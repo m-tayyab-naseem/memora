@@ -7,7 +7,8 @@ import { apiClient } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Upload, AlertCircle, CheckCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Upload, AlertCircle, CheckCircle, ChevronDown } from "lucide-react";
 
 interface MediaUploadProps {
   vaultId: string;
@@ -18,6 +19,10 @@ export function MediaUpload({ vaultId, onUploadSuccess }: MediaUploadProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [caption, setCaption] = useState("");
+  const [memoryDate, setMemoryDate] = useState("");
+  const [tags, setTags] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -105,6 +110,60 @@ export function MediaUpload({ vaultId, onUploadSuccess }: MediaUploadProps) {
             {loading ? "Uploading..." : "Select Files"}
           </Button>
         </div>
+
+        {/* Optional Metadata Form */}
+        <Button
+          variant="ghost"
+          className="w-full justify-between"
+          onClick={() => setShowForm(!showForm)}
+        >
+          <span className="text-sm font-medium">Add Context (Optional)</span>
+          <ChevronDown className={`h-4 w-4 transition-transform ${showForm ? "rotate-180" : ""}`} />
+        </Button>
+
+        {showForm && (
+          <div className="space-y-3 border-t border-slate-200 pt-4">
+            <div>
+              <label className="text-xs font-medium text-slate-700 block mb-1">
+                Caption
+              </label>
+              <Input
+                placeholder="e.g., Family dinner on Christmas"
+                value={caption}
+                onChange={(e) => setCaption(e.target.value)}
+                className="text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-slate-700 block mb-1">
+                When did this memory happen?
+              </label>
+              <Input
+                type="date"
+                value={memoryDate}
+                onChange={(e) => setMemoryDate(e.target.value)}
+                className="text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-slate-700 block mb-1">
+                Tags (comma-separated)
+              </label>
+              <Input
+                placeholder="e.g., family, celebration, 2023"
+                value={tags}
+                onChange={(e) => setTags(e.target.value)}
+                className="text-sm"
+              />
+            </div>
+
+            <p className="text-xs text-slate-500 italic">
+              This information will be saved with your media and help organize your memories
+            </p>
+          </div>
+        )}
 
         <p className="text-xs text-slate-500 text-center">
           All files are encrypted and stored securely

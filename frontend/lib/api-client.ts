@@ -1,4 +1,4 @@
-import { AuthResponse, ApiError, ApiResponse, Vault, MediaItem, User } from "./types";
+import { AuthResponse, ApiError, ApiResponse, Vault, MediaItem, User, VaultMember } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1";
 
@@ -32,14 +32,21 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${API_BASE_URL}${path}`;
-    const headers: HeadersInit = {
+    const headers = new Headers({
       "Content-Type": "application/json",
-      ...options.headers,
-    };
+    });
+
+    // Add existing headers if provided
+    if (options.headers) {
+      const additionalHeaders = new Headers(options.headers);
+      additionalHeaders.forEach((value, key) => {
+        headers.set(key, value);
+      });
+    }
 
     const token = this.getToken();
     if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
+      headers.set("Authorization", `Bearer ${token}`);
     }
 
     const response = await fetch(url, {
@@ -103,6 +110,17 @@ class ApiClient {
     const data = await this.request<{ vault: Vault }>(`/vaults/${id}`, { method: "GET" });
     const vault = data.vault;
     return { ...vault, id: vault.id || vault._id };
+  }
+
+  async getVaultMembers(vaultId: string): Promise<VaultMember[]> {
+    const data = await this.request<{ members: any[] }>(`/vaults/${vaultId}/members`, { method: "GET" });
+    return data.members.map(m => ({
+      id: m.userId._id || m.userId.id || m._id,
+      name: m.userId.name,
+      email: m.userId.email,
+      role: m.role,
+      joinedAt: m.createdAt
+    }));
   }
 
   async createVault(name: string, description?: string): Promise<Vault> {
