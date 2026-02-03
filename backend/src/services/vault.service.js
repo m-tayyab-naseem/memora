@@ -1,6 +1,7 @@
 const Vault = require('../models/Vault');
 const VaultMember = require('../models/VaultMember');
 const User = require('../models/User');
+const mediaService = require('./media.service');
 const { NotFoundError, AuthorizationError, ConflictError } = require('../utils/errors');
 
 const createVault = async (userId, name, description) => {
@@ -61,15 +62,23 @@ const updateVault = async (vaultId, updates) => {
 };
 
 const deleteVault = async (vaultId) => {
-    const vault = await Vault.findOneAndUpdate(
-        { _id: vaultId, isDeleted: false },
-        { isDeleted: true },
-        { new: true }
-    );
+    const vault = await Vault.findOne({ _id: vaultId, isDeleted: false });
 
     if (!vault) {
         throw new NotFoundError('Vault not found');
     }
+
+    // 1. Delete all media from R2 and database
+    await mediaService.deleteAllVaultMedia(vaultId);
+
+    // 2. Delete all vault members
+    await VaultMember.deleteMany({ vaultId });
+
+    // 3. Mark vault as deleted (or delete it permanently? Mark as deleted for now as per current pattern)
+    vault.isDeleted = true;
+    vault.mediaCount = 0;
+    vault.memberCount = 0;
+    await vault.save();
 
     return vault;
 };

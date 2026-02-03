@@ -38,6 +38,14 @@ const mediaItemSchema = new mongoose.Schema({
         trim: true,
         maxlength: [1000, 'Description cannot exceed 1000 characters']
     },
+    capturedAt: {
+        type: Date,
+        default: Date.now
+    },
+    tags: [{
+        type: String,
+        trim: true
+    }],
     metadata: {
         width: Number,
         height: Number,

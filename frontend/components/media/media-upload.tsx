@@ -23,27 +23,52 @@ export function MediaUpload({ vaultId, onUploadSuccess }: MediaUploadProps) {
   const [caption, setCaption] = useState("");
   const [memoryDate, setMemoryDate] = useState("");
   const [tags, setTags] = useState("");
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
+    setSelectedFiles(Array.from(files));
+    setError(null);
+    setSuccess(false);
+  };
+
+  const resetForm = () => {
+    setSelectedFiles([]);
+    setCaption("");
+    setMemoryDate("");
+    setTags("");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleUpload = async () => {
+    if (selectedFiles.length === 0) return;
 
     setError(null);
     setSuccess(false);
     setLoading(true);
 
     try {
-      const formData = new FormData();
-      Array.from(files).forEach((file) => {
-        formData.append("media", file);
-      });
+      // If multiple files, we'll upload them one by one to keep the backend simple 
+      // or we can update the backend to handle multiple. 
+      // Given the user's request for "media items", and specific defaults, 
+      // uploading one by one from the frontend is safer if the metadata is shared.
 
-      await apiClient.uploadMedia(vaultId, formData);
-      setSuccess(true);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
+      for (const file of selectedFiles) {
+        const formData = new FormData();
+        formData.append("media", file);
+        if (caption) formData.append("description", caption);
+        if (memoryDate) formData.append("capturedAt", memoryDate);
+        if (tags) formData.append("tags", tags);
+
+        await apiClient.uploadMedia(vaultId, formData);
       }
+
+      setSuccess(true);
+      resetForm();
       onUploadSuccess?.();
 
       setTimeout(() => {
@@ -85,12 +110,30 @@ export function MediaUpload({ vaultId, onUploadSuccess }: MediaUploadProps) {
 
         <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center hover:border-violet-400 transition-colors">
           <Upload className="h-10 w-10 text-slate-400 mx-auto mb-3" />
-          <p className="text-sm font-medium text-slate-700 mb-2">
-            Drop your files here or click to select
-          </p>
-          <p className="text-xs text-slate-500 mb-4">
-            Supported: JPG, PNG, GIF, WebP, MP4, WebM (max 100MB per file)
-          </p>
+          {selectedFiles.length > 0 ? (
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-violet-600">
+                {selectedFiles.length} file(s) selected
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedFiles([])}
+                disabled={loading}
+              >
+                Clear Selection
+              </Button>
+            </div>
+          ) : (
+            <>
+              <p className="text-sm font-medium text-slate-700 mb-2">
+                Drop your files here or click to select
+              </p>
+              <p className="text-xs text-slate-500 mb-4">
+                Supported: JPG, PNG, GIF, WebP, MP4, WebM (max 100MB per file)
+              </p>
+            </>
+          )}
           <input
             ref={fileInputRef}
             type="file"
@@ -101,14 +144,16 @@ export function MediaUpload({ vaultId, onUploadSuccess }: MediaUploadProps) {
             className="hidden"
             id="file-input"
           />
-          <Button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={loading}
-            className="gap-2"
-          >
-            {loading ? "Uploading..." : "Select Files"}
-          </Button>
+          {!selectedFiles.length && (
+            <Button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={loading}
+              className="gap-2"
+            >
+              Select Files
+            </Button>
+          )}
         </div>
 
         {/* Optional Metadata Form */}
@@ -163,6 +208,16 @@ export function MediaUpload({ vaultId, onUploadSuccess }: MediaUploadProps) {
               This information will be saved with your media and help organize your memories
             </p>
           </div>
+        )}
+
+        {selectedFiles.length > 0 && (
+          <Button
+            className="w-full bg-violet-600 hover:bg-violet-700"
+            onClick={handleUpload}
+            disabled={loading}
+          >
+            {loading ? `Uploading ${selectedFiles.length} item(s)...` : `Upload ${selectedFiles.length} Memory(ies)`}
+          </Button>
         )}
 
         <p className="text-xs text-slate-500 text-center">

@@ -1,7 +1,8 @@
 const MediaItem = require('../models/MediaItem');
 const Vault = require('../models/Vault');
+const Comment = require('../models/Comment');
 const { s3Client, bucketName } = require('../config/storage');
-const { PutObjectCommand, GetObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { PutObjectCommand, GetObjectCommand, DeleteObjectCommand, DeleteObjectsCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
@@ -11,7 +12,9 @@ const { NotFoundError } = require('../utils/errors');
 /**
  * Uploads media to Cloudflare R2 and creates a database record.
  */
-const uploadMedia = async (vaultId, userId, file, description) => {
+const uploadMedia = async (vaultId, userId, file, metadata = {}) => {
+    const { description, capturedAt, tags } = metadata;
+
     // 1. Generate a unique key for the file in the bucket
     const fileKey = `vaults/${vaultId}/${uuidv4()}${path.extname(file.originalname)}`;
 
@@ -40,7 +43,9 @@ const uploadMedia = async (vaultId, userId, file, description) => {
         fileSize: file.size,
         mimeType: file.mimetype,
         uploadedBy: userId,
-        description
+        description: description || file.originalname,
+        capturedAt: capturedAt || Date.now(),
+        tags: tags || []
     });
 
     await mediaItem.save();
@@ -138,11 +143,40 @@ const deleteMedia = async (vaultId, mediaId) => {
     };
     await s3Client.send(new DeleteObjectCommand(deleteParams));
 
-    // 2. Delete from DB
+    // 2. Delete comments
+    await Comment.deleteMany({ mediaId });
+
+    // 3. Delete from DB
     await MediaItem.findByIdAndDelete(mediaId);
 
-    // 3. Update vault media count
+    // 4. Update vault media count
     await Vault.findByIdAndUpdate(vaultId, { $inc: { mediaCount: -1 } });
+
+    return true;
+};
+
+/**
+ * Deletes all media associated with a vault from R2 and database.
+ */
+const deleteAllVaultMedia = async (vaultId) => {
+    const media = await MediaItem.find({ vaultId });
+    if (media.length === 0) return true;
+
+    // 1. Delete all from R2
+    const deleteParams = {
+        Bucket: bucketName,
+        Delete: {
+            Objects: media.map(item => ({ Key: item.mediaUrl }))
+        }
+    };
+    await s3Client.send(new DeleteObjectsCommand(deleteParams));
+
+    // 2. Delete all comments for these media items
+    const mediaIds = media.map(m => m._id);
+    await Comment.deleteMany({ mediaId: { $in: mediaIds } });
+
+    // 3. Delete all from DB
+    await MediaItem.deleteMany({ vaultId });
 
     return true;
 };
@@ -151,5 +185,6 @@ module.exports = {
     uploadMedia,
     getMedia,
     getMediaItem,
-    deleteMedia
+    deleteMedia,
+    deleteAllVaultMedia
 };

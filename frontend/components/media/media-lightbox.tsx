@@ -78,11 +78,11 @@ export function MediaLightbox({
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-4">
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="text-white hover:bg-slate-800"
+                        className="text-white hover:bg-white/20 h-12 w-12 rounded-full backdrop-blur-md"
                         onClick={() => {
                             const link = document.createElement("a");
                             link.href = currentMedia.url;
@@ -90,36 +90,38 @@ export function MediaLightbox({
                             link.click();
                         }}
                     >
-                        <Download className="h-5 w-5" />
+                        <Download className="h-6 w-6" />
                     </Button>
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="text-white hover:bg-slate-800"
+                        className="text-white bg-red-600/80 hover:bg-red-600 h-12 w-12 rounded-full backdrop-blur-md border border-white/20 shadow-xl"
                         onClick={onClose}
                     >
-                        <X className="h-5 w-5" />
+                        <X className="h-6 w-6" />
                     </Button>
                 </div>
             </div>
 
             {/* Media Display */}
-            <div className="flex-1 flex items-center justify-center overflow-hidden">
-                <div className="relative w-full h-full flex items-center justify-center">
+            <div className="flex-1 flex items-center justify-center p-4 min-h-0">
+                <div className="relative w-full h-full max-w-7xl mx-auto flex items-center justify-center">
                     {currentMedia.type === "photo" ? (
-                        <Image
-                            src={currentMedia.url || "/placeholder.svg"}
-                            alt={currentMedia.caption || "Memory"}
-                            fill
-                            className="object-contain"
-                            priority
-                        />
+                        <div className="relative w-full h-full">
+                            <Image
+                                src={currentMedia.url || "/placeholder.svg"}
+                                alt={currentMedia.caption || "Memory"}
+                                fill
+                                className="object-contain"
+                                priority
+                            />
+                        </div>
                     ) : (
-                        <div className="relative w-full h-full bg-black flex items-center justify-center">
+                        <div className="w-full h-full flex items-center justify-center">
                             <video
                                 src={currentMedia.url}
                                 controls
-                                className="max-w-full max-h-full"
+                                className="max-w-full max-h-full rounded-lg shadow-2xl"
                                 autoPlay
                             />
                         </div>
@@ -133,23 +135,23 @@ export function MediaLightbox({
                     {currentIndex + 1} / {media.length}
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-6">
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="text-white hover:bg-slate-800"
+                        className="text-white bg-white/10 hover:bg-white/20 h-14 w-14 rounded-full backdrop-blur-lg border border-white/10 shadow-2xl transition-all hover:scale-110 active:scale-95"
                         onClick={handlePrevious}
                     >
-                        <ChevronLeft className="h-5 w-5" />
+                        <ChevronLeft className="h-8 w-8" />
                     </Button>
 
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="text-white hover:bg-slate-800"
+                        className="text-white bg-white/10 hover:bg-white/20 h-14 w-14 rounded-full backdrop-blur-lg border border-white/10 shadow-2xl transition-all hover:scale-110 active:scale-95"
                         onClick={handleNext}
                     >
-                        <ChevronRight className="h-5 w-5" />
+                        <ChevronRight className="h-8 w-8" />
                     </Button>
                 </div>
 

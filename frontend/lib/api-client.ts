@@ -115,9 +115,9 @@ class ApiClient {
   async getVaultMembers(vaultId: string): Promise<VaultMember[]> {
     const data = await this.request<{ members: any[] }>(`/vaults/${vaultId}/members`, { method: "GET" });
     return data.members.map(m => ({
-      id: m.userId._id || m.userId.id || m._id,
-      name: m.userId.name,
-      email: m.userId.email,
+      id: m.userId?._id || m.userId?.id || m._id,
+      name: m.userId?.name || "Unknown",
+      email: m.userId?.email || "",
       role: m.role,
       joinedAt: m.createdAt
     }));
@@ -144,7 +144,12 @@ class ApiClient {
       id: m.id || m._id,
       url: m.signedUrl || m.mediaUrl, // Prefer signedUrl from backend
       type: m.mediaType === "image" ? "photo" : "video",
-      uploadedAt: m.createdAt
+      uploadedAt: m.createdAt,
+      uploadedBy: typeof m.uploadedBy === 'object' ? m.uploadedBy._id : m.uploadedBy,
+      uploadedByName: typeof m.uploadedBy === 'object' ? m.uploadedBy.name : undefined,
+      caption: m.description,
+      memoryDate: m.capturedAt,
+      tags: m.tags || []
     }));
   }
 
@@ -178,7 +183,12 @@ class ApiClient {
       id: media.id || media._id,
       url: media.signedUrl || media.mediaUrl,
       type: media.mediaType === "image" ? "photo" : "video",
-      uploadedAt: media.createdAt
+      uploadedAt: media.createdAt,
+      uploadedBy: typeof media.uploadedBy === 'object' ? media.uploadedBy._id : media.uploadedBy,
+      uploadedByName: typeof media.uploadedBy === 'object' ? media.uploadedBy.name : undefined,
+      caption: media.description,
+      memoryDate: media.capturedAt,
+      tags: media.tags || []
     };
   }
 }

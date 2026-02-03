@@ -8,12 +8,25 @@ exports.uploadMedia = async (req, res, next) => {
             throw new ValidationError('No file uploaded');
         }
 
-        const { description } = req.body;
+        const { description, capturedAt, tags } = req.body;
+
+        // Process tags: if it's a string, split by comma and trim. If already array, use it.
+        let tagsArray = [];
+        if (tags) {
+            tagsArray = typeof tags === 'string'
+                ? tags.split(',').map(tag => tag.trim()).filter(Boolean)
+                : tags;
+        }
+
         const media = await mediaService.uploadMedia(
             req.params.vaultId,
             req.user.userId,
             req.file,
-            description
+            {
+                description,
+                capturedAt,
+                tags: tagsArray
+            }
         );
 
         await auditService.log({
