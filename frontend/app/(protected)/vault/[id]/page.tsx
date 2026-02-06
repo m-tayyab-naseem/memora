@@ -107,7 +107,7 @@ export default function VaultDetailPage({ params }: { params: Promise<{ id: stri
   const memberCount = vault.memberCount || members.length;
 
   return (
-    <div className="max-w-7xl mx-auto p-4 sm:p-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="max-w-8xl mx-auto p-4 sm:p-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <Button
         variant="ghost"
         className="gap-2 mb-8 text-slate-500 hover:text-slate-900 hover:bg-slate-100/80 rounded-full transition-all group"
@@ -149,7 +149,7 @@ export default function VaultDetailPage({ params }: { params: Promise<{ id: stri
           </div>
         </div>
         <div className="flex gap-3">
-          {vaultWithMembers && <VaultSettings vault={vaultWithMembers} />}
+          {vaultWithMembers && <VaultSettings vault={vaultWithMembers} onUpdate={fetchVaultData} />}
         </div>
       </div>
 
@@ -158,12 +158,16 @@ export default function VaultDetailPage({ params }: { params: Promise<{ id: stri
           <MediaGallery
             vaultId={vault.id}
             initialMedia={media}
+            members={members}
+            userRole={vault.userRole}
             onMediaDeleted={handleMediaDeleted}
           />
         </div>
         <div className="xl:col-span-4 space-y-10">
           <div className="sticky top-8 space-y-10">
-            <MediaUpload vaultId={vault.id} onUploadSuccess={fetchMedia} />
+            {vault.userRole !== "viewer" && (
+              <MediaUpload vaultId={vault.id} onUploadSuccess={fetchMedia} />
+            )}
             <VaultMembers members={members} />
           </div>
         </div>

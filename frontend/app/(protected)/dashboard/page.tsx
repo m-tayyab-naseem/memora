@@ -22,7 +22,6 @@ export default function DashboardPage() {
 
       } catch (err) {
         setError("Failed to load vaults");
-        // console.error(err);
       } finally {
         setLoading(false);
       }

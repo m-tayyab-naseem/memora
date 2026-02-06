@@ -130,7 +130,7 @@ export function MediaUpload({ vaultId, onUploadSuccess }: MediaUploadProps) {
                 Drop your files here or click to select
               </p>
               <p className="text-xs text-slate-500 mb-4">
-                Supported: JPG, PNG, GIF, WebP, MP4, WebM (max 100MB per file)
+                Supported: JPG, PNG, GIF, WebP, MP4, WebM, MKV (max 100MB per file)
               </p>
             </>
           )}

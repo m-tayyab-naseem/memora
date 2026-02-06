@@ -7,6 +7,25 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { Header } from "@/components/shared/header";
 import { Sidebar } from "@/components/shared/sidebar";
+import { UiProvider, useUi } from "@/context/ui-context";
+
+function ProtectedLayoutContent({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const { isImmersive } = useUi();
+
+  return (
+    <div className="flex h-screen bg-slate-50 overflow-hidden">
+      {!isImmersive && <Sidebar />}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {!isImmersive && <Header />}
+        <main className="flex-1 overflow-auto focus:outline-none">{children}</main>
+      </div>
+    </div>
+  );
+}
 
 export default function ProtectedLayout({
   children,
@@ -31,12 +50,8 @@ export default function ProtectedLayout({
   }
 
   return (
-    <div className="flex h-screen bg-slate-50">
-      <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header />
-        <main className="flex-1 overflow-auto">{children}</main>
-      </div>
-    </div>
+    <UiProvider>
+      <ProtectedLayoutContent>{children}</ProtectedLayoutContent>
+    </UiProvider>
   );
 }

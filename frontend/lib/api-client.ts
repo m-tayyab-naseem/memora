@@ -1,4 +1,4 @@
-import { AuthResponse, ApiError, ApiResponse, Vault, MediaItem, User, VaultMember } from "./types";
+import { AuthResponse, ApiError, ApiResponse, Vault, MediaItem, User, VaultMember, UserRole } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1";
 
@@ -132,8 +132,51 @@ class ApiClient {
     return { ...vault, id: vault.id || vault._id };
   }
 
+  async updateVault(id: string, name: string, description?: string): Promise<Vault> {
+    const data = await this.request<{ vault: Vault }>(`/vaults/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ name, description }),
+    });
+    const vault = data.vault;
+    return { ...vault, id: vault.id || vault._id };
+  }
+
   async deleteVault(id: string): Promise<void> {
     return this.request(`/vaults/${id}`, { method: "DELETE" });
+  }
+
+  async addVaultMember(vaultId: string, email: string, role: UserRole): Promise<VaultMember> {
+    const data = await this.request<{ member: any }>(`/vaults/${vaultId}/members`, {
+      method: "POST",
+      body: JSON.stringify({ email, role }),
+    });
+    const m = data.member;
+    return {
+      id: m.userId?._id || m.userId?.id || m.userId,
+      name: m.userId?.name || "Unknown",
+      email: m.userId?.email || "",
+      role: m.role,
+      joinedAt: m.createdAt
+    };
+  }
+
+  async updateVaultMemberRole(vaultId: string, userId: string, role: UserRole): Promise<VaultMember> {
+    const data = await this.request<{ member: any }>(`/vaults/${vaultId}/members/${userId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ role }),
+    });
+    const m = data.member;
+    return {
+      id: m.userId?._id || m.userId?.id || m.userId,
+      name: m.userId?.name || "Unknown",
+      email: m.userId?.email || "",
+      role: m.role,
+      joinedAt: m.createdAt
+    };
+  }
+
+  async removeVaultMember(vaultId: string, userId: string): Promise<void> {
+    return this.request(`/vaults/${vaultId}/members/${userId}`, { method: "DELETE" });
   }
 
   // Media endpoints

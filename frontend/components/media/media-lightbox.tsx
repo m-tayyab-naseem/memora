@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { MediaItem } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Download, ChevronLeft, ChevronRight, X, Play } from "lucide-react";
+import { Download, ChevronLeft, ChevronRight, X, Info, Share2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { useUi } from "@/context/ui-context";
 
 interface MediaLightboxProps {
     media: MediaItem[];
@@ -20,7 +21,10 @@ export function MediaLightbox({
     isOpen,
     onClose,
 }: MediaLightboxProps) {
-    const [currentIndex, setCurrentIndex] = useState(initialIndex);
+    const [currentIndex, setCurrentIndex] = useState<number>(initialIndex);
+    const { setIsImmersive } = useUi();
+    const [showControls, setShowControls] = useState(true);
+    const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         setCurrentIndex(initialIndex);
@@ -34,15 +38,45 @@ export function MediaLightbox({
             if (e.key === "ArrowRight") handleNext();
         };
 
-        window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [isOpen, onClose, currentIndex, media.length]);
+        const handleFullscreenChange = () => {
+            // If we exit fullscreen, close the lightbox
+            if (!document.fullscreenElement && isOpen) {
+                onClose();
+            }
+        };
 
-    const handleNext = () => {
+        if (isOpen) {
+            setIsImmersive(true);
+            document.addEventListener("fullscreenchange", handleFullscreenChange);
+
+            // Enter fullscreen on the container
+            if (containerRef.current && !document.fullscreenElement) {
+                containerRef.current.requestFullscreen().catch((err) => {
+                    console.error("Fullscreen request failed:", err);
+                });
+            }
+        } else {
+            setIsImmersive(false);
+            if (document.fullscreenElement) {
+                document.exitFullscreen().catch(() => { });
+            }
+        }
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+            document.removeEventListener("fullscreenchange", handleFullscreenChange);
+            setIsImmersive(false);
+        };
+    }, [isOpen, onClose, setIsImmersive]);
+
+    const handleNext = (e?: React.MouseEvent) => {
+        e?.stopPropagation();
         setCurrentIndex((prev) => (prev + 1) % media.length);
     };
 
-    const handlePrevious = () => {
+    const handlePrevious = (e?: React.MouseEvent) => {
+        e?.stopPropagation();
         setCurrentIndex((prev) => (prev - 1 + media.length) % media.length);
     };
 
@@ -52,37 +86,44 @@ export function MediaLightbox({
 
     return (
         <div
-            className="fixed inset-0 z-50 bg-black/95 flex flex-col"
+            ref={containerRef}
+            className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center overflow-hidden touch-none selection:bg-none"
             onClick={(e) => {
                 if (e.target === e.currentTarget) onClose();
+                setShowControls(!showControls);
             }}
         >
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-slate-700">
-                <div className="flex-1">
-                    <h2 className="text-lg font-semibold text-white truncate">
-                        {currentMedia.caption || "Untitled Memory"}
-                    </h2>
-                    <div className="flex items-center gap-4 mt-2 text-sm text-slate-300">
-                        <span>
-                            {formatDistanceToNow(new Date(currentMedia.memoryDate || currentMedia.uploadedAt), {
-                                addSuffix: true,
-                            })}
-                        </span>
-                        {currentMedia.uploadedByName && (
-                            <>
-                                <span>•</span>
-                                <span>Added by {currentMedia.uploadedByName}</span>
-                            </>
-                        )}
-                    </div>
-                </div>
-
+            {/* Top Bar Overlay */}
+            <div
+                className={`fixed top-0 left-0 right-0 z-[110] flex items-center justify-between p-4 transition-opacity duration-300 bg-gradient-to-b from-black/80 to-transparent ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                onClick={(e) => e.stopPropagation()}
+            >
                 <div className="flex items-center gap-4">
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="text-white hover:bg-white/20 h-12 w-12 rounded-full backdrop-blur-md"
+                        className="text-white hover:bg-white/10 rounded-full h-10 w-10 flex items-center justify-center"
+                        onClick={onClose}
+                    >
+                        <X className="h-6 w-6" />
+                    </Button>
+                    <div className="hidden sm:block">
+                        <h2 className="text-sm font-medium text-white truncate max-w-md">
+                            {currentMedia.caption || "Untitled Memory"}
+                        </h2>
+                        <p className="text-xs text-slate-400">
+                            {formatDistanceToNow(new Date(currentMedia.memoryDate || currentMedia.uploadedAt), {
+                                addSuffix: true,
+                            })}
+                        </p>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-1 sm:gap-2">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-white hover:bg-white/10 rounded-full h-10 w-10 flex items-center justify-center"
                         onClick={() => {
                             const link = document.createElement("a");
                             link.href = currentMedia.url;
@@ -90,83 +131,81 @@ export function MediaLightbox({
                             link.click();
                         }}
                     >
-                        <Download className="h-6 w-6" />
+                        <Download className="h-5 w-5" />
                     </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-white bg-red-600/80 hover:bg-red-600 h-12 w-12 rounded-full backdrop-blur-md border border-white/20 shadow-xl"
-                        onClick={onClose}
-                    >
-                        <X className="h-6 w-6" />
+                    <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 rounded-full h-10 w-10 hidden sm:flex items-center justify-center">
+                        <Share2 className="h-5 w-5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 rounded-full h-10 w-10 hidden sm:flex items-center justify-center">
+                        <Info className="h-5 w-5" />
                     </Button>
                 </div>
             </div>
 
-            {/* Media Display */}
-            <div className="flex-1 flex items-center justify-center p-4 min-h-0">
-                <div className="relative w-full h-full max-w-7xl mx-auto flex items-center justify-center">
-                    {currentMedia.type === "photo" ? (
-                        <div className="relative w-full h-full">
-                            <Image
-                                src={currentMedia.url || "/placeholder.svg"}
-                                alt={currentMedia.caption || "Memory"}
-                                fill
-                                className="object-contain"
-                                priority
-                            />
-                        </div>
-                    ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                            <video
-                                src={currentMedia.url}
-                                controls
-                                className="max-w-full max-h-full rounded-lg shadow-2xl"
-                                autoPlay
-                            />
-                        </div>
-                    )}
-                </div>
+            {/* Main Media Viewport */}
+            <div className="relative w-full h-full flex items-center justify-center bg-black focus:outline-none select-none">
+                {currentMedia.type === "photo" ? (
+                    <div className="relative w-full h-full p-0 sm:p-2 animate-in fade-in zoom-in-95 duration-500">
+                        <Image
+                            src={currentMedia.url || "/placeholder.svg"}
+                            alt={currentMedia.caption || "Memory"}
+                            fill
+                            className="object-contain"
+                            priority
+                            draggable={false}
+                        />
+                    </div>
+                ) : (
+                    <div className="w-full h-full flex items-center justify-center animate-in fade-in zoom-in-95 duration-500">
+                        <video
+                            src={currentMedia.url}
+                            controls
+                            className="max-w-full max-h-full"
+                            autoPlay
+                        />
+                    </div>
+                )}
+
+                {/* Fullscreen Navigation Buttons */}
+                {media.length > 1 && (
+                    <>
+                        <button
+                            className={`fixed left-6 top-1/2 -translate-y-1/2 z-[110] text-white/40 hover:text-white bg-black/10 hover:bg-black/30 p-4 rounded-full transition-all duration-300 backdrop-blur-sm ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                            onClick={handlePrevious}
+                        >
+                            <ChevronLeft className="h-10 w-10" />
+                        </button>
+                        <button
+                            className={`fixed right-6 top-1/2 -translate-y-1/2 z-[110] text-white/40 hover:text-white bg-black/10 hover:bg-black/30 p-4 rounded-full transition-all duration-300 backdrop-blur-sm ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                            onClick={handleNext}
+                        >
+                            <ChevronRight className="h-10 w-10" />
+                        </button>
+                    </>
+                )}
             </div>
 
-            {/* Footer with Navigation */}
-            <div className="flex items-center justify-between p-4 border-t border-slate-700">
-                <div className="text-sm text-slate-300">
+            {/* Info & Metadata Overlay */}
+            <div
+                className={`fixed bottom-0 left-0 right-0 z-[110] flex flex-col items-center p-8 transition-opacity duration-300 bg-gradient-to-t from-black/80 to-transparent ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="text-[10px] font-bold text-white/70 bg-white/5 px-4 py-1.5 rounded-full backdrop-blur-lg border border-white/10 tracking-[0.2em] uppercase">
                     {currentIndex + 1} / {media.length}
                 </div>
 
-                <div className="flex items-center gap-6">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-white bg-white/10 hover:bg-white/20 h-14 w-14 rounded-full backdrop-blur-lg border border-white/10 shadow-2xl transition-all hover:scale-110 active:scale-95"
-                        onClick={handlePrevious}
-                    >
-                        <ChevronLeft className="h-8 w-8" />
-                    </Button>
-
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-white bg-white/10 hover:bg-white/20 h-14 w-14 rounded-full backdrop-blur-lg border border-white/10 shadow-2xl transition-all hover:scale-110 active:scale-95"
-                        onClick={handleNext}
-                    >
-                        <ChevronRight className="h-8 w-8" />
-                    </Button>
-                </div>
-
-                <div className="flex items-center gap-1 flex-wrap justify-end max-w-xs">
-                    {currentMedia.tags && currentMedia.tags.length > 0 && (
-                        currentMedia.tags.map((tag) => (
+                {currentMedia.tags && currentMedia.tags.length > 0 && (
+                    <div className="mt-4 flex items-center gap-2 overflow-x-auto max-w-full no-scrollbar px-4 pb-2">
+                        {currentMedia.tags.map((tag) => (
                             <span
                                 key={tag}
-                                className="text-xs bg-violet-600/20 text-violet-200 px-2 py-1 rounded"
+                                className="text-[9px] bg-white/5 text-white/60 px-3 py-1 rounded-full border border-white/5 whitespace-nowrap"
                             >
                                 #{tag}
                             </span>
-                        ))
-                    )}
-                </div>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );
