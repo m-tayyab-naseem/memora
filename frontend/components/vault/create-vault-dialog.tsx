@@ -5,6 +5,7 @@ import React from "react"
 import { useState } from "react";
 import { Vault } from "@/lib/types";
 import { apiClient } from "@/lib/api-client";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -33,6 +34,7 @@ export function CreateVaultDialog({
   onVaultCreated,
   trigger,
 }: CreateVaultDialogProps) {
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -67,6 +69,10 @@ export function CreateVaultDialog({
       );
       onVaultCreated(newVault);
       setFormData({ name: "", description: "" });
+      toast({
+        title: "Vault Created",
+        description: `"${newVault.name}" has been created successfully.`,
+      });
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to create vault"

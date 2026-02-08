@@ -46,6 +46,16 @@ export default function RegisterPage() {
       return;
     }
 
+    if (!/\d/.test(formData.password)) {
+      setValidationError("Password must contain at least one number");
+      return;
+    }
+
+    if (!/[a-zA-Z]/.test(formData.password)) {
+      setValidationError("Password must contain at least one letter");
+      return;
+    }
+
     try {
       await register(formData.email, formData.password, formData.name);
       router.push("/dashboard");
@@ -55,7 +65,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 px-4">
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background to-secondary/30 px-4">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-2">
           <CardTitle className="text-2xl">Create Account</CardTitle>

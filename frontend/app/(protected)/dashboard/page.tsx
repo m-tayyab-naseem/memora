@@ -31,7 +31,9 @@ export default function DashboardPage() {
   }, []);
 
   const handleVaultCreated = (newVault: Vault) => {
-    setVaults((prev) => [newVault, ...prev]);
+    // Explicitly set userRole as owner for newly created vaults so the delete button shows immediately
+    const vaultWithRole = { ...newVault, userRole: "owner" as const };
+    setVaults((prev) => [vaultWithRole, ...prev]);
     setShowCreateDialog(false);
   };
 
@@ -43,7 +45,7 @@ export default function DashboardPage() {
     <div className="p-8">
       <div className="mb-8">
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-3xl font-bold text-slate-900">My Vaults</h2>
+          <h2 className="text-3xl font-bold text-foreground">My Vaults</h2>
           <CreateVaultDialog
             isOpen={showCreateDialog}
             onOpenChange={setShowCreateDialog}
@@ -56,13 +58,13 @@ export default function DashboardPage() {
             }
           />
         </div>
-        <p className="text-slate-600">
+        <p className="text-muted-foreground">
           Create and manage your memory vaults securely
         </p>
       </div>
 
       {error && (
-        <div className="mb-6 rounded-lg bg-red-50 border border-red-200 p-4 text-red-700">
+        <div className="mb-6 rounded-lg bg-destructive/10 border border-destructive/20 p-4 text-destructive">
           {error}
         </div>
       )}
@@ -72,13 +74,13 @@ export default function DashboardPage() {
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="h-48 bg-slate-200 rounded-lg animate-pulse"
+              className="h-48 bg-muted rounded-lg animate-pulse"
             />
           ))}
         </div>
       ) : vaults.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-slate-500 mb-4">No vaults yet. Create your first one!</p>
+          <p className="text-muted-foreground mb-4">No vaults yet. Create your first one!</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

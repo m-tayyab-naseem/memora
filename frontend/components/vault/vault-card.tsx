@@ -15,6 +15,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { apiClient } from "@/lib/api-client";
+import { useToast } from "@/hooks/use-toast";
 import { Trash2, ChevronRight } from "lucide-react";
 
 interface VaultCardProps {
@@ -23,11 +24,22 @@ interface VaultCardProps {
 }
 
 export function VaultCard({ vault, onDeleted }: VaultCardProps) {
+  const { toast } = useToast();
+
   const handleDelete = async () => {
     try {
       await apiClient.deleteVault(vault.id);
+      toast({
+        title: "Vault Deleted",
+        description: `"${vault.name}" has been permanently removed.`,
+      });
       onDeleted(vault.id);
-    } catch (err) {
+    } catch (err: any) {
+      toast({
+        title: "Deletion Failed",
+        description: err.message || "Failed to delete vault",
+        variant: "destructive",
+      });
       console.error("Failed to delete vault:", err);
     }
   };
@@ -43,7 +55,7 @@ export function VaultCard({ vault, onDeleted }: VaultCardProps) {
         )}
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="text-sm text-slate-600">
+        <div className="text-sm text-muted-foreground">
           <p>
             {vault.memberCount ?? vault.members?.length ?? 0} member
             {(vault.memberCount ?? vault.members?.length ?? 0) !== 1 ? "s" : ""}
@@ -56,27 +68,29 @@ export function VaultCard({ vault, onDeleted }: VaultCardProps) {
               <ChevronRight className="h-4 w-4" />
             </Button>
           </Link>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" size="icon">
-                <Trash2 className="h-4 w-4 text-red-600" />
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete Vault</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action cannot be undone. All content in "{vault.name}" will be permanently deleted.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <div className="flex gap-3 justify-end">
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDelete} className="bg-red-600">
-                  Delete
-                </AlertDialogAction>
-              </div>
-            </AlertDialogContent>
-          </AlertDialog>
+          {vault.userRole === "owner" && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <Trash2 className="h-4 w-4 text-red-600" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Vault</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. All content in "{vault.name}" will be permanently deleted.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="flex gap-3 justify-end">
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} className="bg-red-600">
+                    Delete
+                  </AlertDialogAction>
+                </div>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
       </CardContent>
     </Card>

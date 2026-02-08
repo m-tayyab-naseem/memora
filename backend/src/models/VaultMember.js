@@ -13,7 +13,7 @@ const vaultMemberSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['owner', 'contributor', 'viewer'],
+        enum: ['owner', 'editor', 'viewer'],
         required: true
     },
     invitedBy: {

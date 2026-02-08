@@ -45,9 +45,15 @@ exports.getVault = async (req, res, next) => {
     try {
         const vault = await vaultService.getVaultById(req.params.vaultId);
 
+        // Include the user's role in this vault
+        const vaultData = {
+            ...vault.toObject(),
+            userRole: req.vaultMembership.role
+        };
+
         res.json({
             success: true,
-            data: { vault }
+            data: { vault: vaultData }
         });
     } catch (error) {
         next(error);

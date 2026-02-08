@@ -17,8 +17,12 @@ function ProtectedLayoutContent({
   const { isImmersive } = useUi();
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden">
-      {!isImmersive && <Sidebar />}
+    <div className="flex h-screen bg-background overflow-hidden">
+      {!isImmersive && (
+        <div className="hidden md:flex">
+          <Sidebar />
+        </div>
+      )}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {!isImmersive && <Header />}
         <main className="flex-1 overflow-auto focus:outline-none">{children}</main>

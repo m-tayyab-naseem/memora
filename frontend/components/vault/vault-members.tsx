@@ -13,13 +13,13 @@ export function VaultMembers({ members }: VaultMembersProps) {
   const getRoleColor = (role: string) => {
     switch (role) {
       case "owner":
-        return "bg-violet-100 text-violet-800";
+        return "bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-400";
       case "editor":
-        return "bg-blue-100 text-blue-800";
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400";
       case "viewer":
-        return "bg-slate-100 text-slate-800";
+        return "bg-slate-100 text-slate-800 dark:bg-muted dark:text-muted-foreground";
       default:
-        return "bg-slate-100 text-slate-800";
+        return "bg-slate-100 text-slate-800 dark:bg-muted dark:text-muted-foreground";
     }
   };
 
@@ -32,14 +32,14 @@ export function VaultMembers({ members }: VaultMembersProps) {
       <CardContent>
         <div className="space-y-3">
           {members.map((member) => (
-            <div key={member.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-200">
+            <div key={member.id} className="flex items-center justify-between p-3 rounded-xl bg-background border border-border transition-colors hover:bg-muted/30">
               <div className="flex items-center gap-3">
-                <div className="h-8 w-8 rounded-full bg-violet-100 flex items-center justify-center">
-                  <User className="h-4 w-4 text-violet-600" />
+                <div className="h-8 w-8 rounded-full bg-violet-500/10 flex items-center justify-center">
+                  <User className="h-4 w-4 text-violet-500" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-900">{member.name}</p>
-                  <p className="text-xs text-slate-500">{member.email}</p>
+                  <p className="text-sm font-medium text-foreground">{member.name}</p>
+                  <p className="text-xs text-muted-foreground">{member.email}</p>
                 </div>
               </div>
               <Badge className={getRoleColor(member.role)}>

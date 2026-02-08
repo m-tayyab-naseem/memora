@@ -13,7 +13,7 @@ router.post('/:vaultId/upload',
     [param('vaultId').isMongoId().withMessage('Invalid vault ID')],
     validate,
     checkVaultAccess,
-    checkVaultRole(['owner', 'contributor']),
+    checkVaultRole(['owner', 'editor']),
     upload.single('media'),
     mediaController.uploadMedia
 );
@@ -50,7 +50,7 @@ router.delete('/:vaultId/:mediaId',
     ],
     validate,
     checkVaultAccess,
-    checkVaultRole(['owner', 'contributor']),
+    checkVaultRole(['owner', 'editor']),
     mediaController.deleteMedia
 );
 

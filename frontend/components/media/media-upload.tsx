@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Upload, AlertCircle, CheckCircle, ChevronDown } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface MediaUploadProps {
   vaultId: string;
@@ -16,6 +17,7 @@ interface MediaUploadProps {
 }
 
 export function MediaUpload({ vaultId, onUploadSuccess }: MediaUploadProps) {
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -71,13 +73,22 @@ export function MediaUpload({ vaultId, onUploadSuccess }: MediaUploadProps) {
       resetForm();
       onUploadSuccess?.();
 
+      toast({
+        title: "Upload Successful",
+        description: `${selectedFiles.length} item(s) have been added to the vault.`,
+      });
+
       setTimeout(() => {
         setSuccess(false);
       }, 3000);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to upload media"
-      );
+    } catch (err: any) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to upload media";
+      setError(errorMessage);
+      toast({
+        title: "Upload Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -100,16 +111,16 @@ export function MediaUpload({ vaultId, onUploadSuccess }: MediaUploadProps) {
         )}
 
         {success && (
-          <Alert className="border-green-200 bg-green-50">
-            <CheckCircle className="h-4 w-4 text-green-600" />
-            <AlertDescription className="text-green-800">
+          <Alert className="border-green-500/20 bg-green-500/10">
+            <CheckCircle className="h-4 w-4 text-green-500" />
+            <AlertDescription className="text-green-500">
               Media uploaded successfully!
             </AlertDescription>
           </Alert>
         )}
 
-        <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center hover:border-violet-400 transition-colors">
-          <Upload className="h-10 w-10 text-slate-400 mx-auto mb-3" />
+        <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-violet-500/50 transition-colors">
+          <Upload className="h-10 w-10 text-muted-foreground/50 mx-auto mb-3" />
           {selectedFiles.length > 0 ? (
             <div className="space-y-2">
               <p className="text-sm font-medium text-violet-600">
@@ -126,10 +137,10 @@ export function MediaUpload({ vaultId, onUploadSuccess }: MediaUploadProps) {
             </div>
           ) : (
             <>
-              <p className="text-sm font-medium text-slate-700 mb-2">
+              <p className="text-sm font-medium text-foreground mb-2">
                 Drop your files here or click to select
               </p>
-              <p className="text-xs text-slate-500 mb-4">
+              <p className="text-xs text-muted-foreground mb-4">
                 Supported: JPG, PNG, GIF, WebP, MP4, WebM, MKV (max 100MB per file)
               </p>
             </>
@@ -167,9 +178,9 @@ export function MediaUpload({ vaultId, onUploadSuccess }: MediaUploadProps) {
         </Button>
 
         {showForm && (
-          <div className="space-y-3 border-t border-slate-200 pt-4">
+          <div className="space-y-3 border-t border-border pt-4">
             <div>
-              <label className="text-xs font-medium text-slate-700 block mb-1">
+              <label className="text-xs font-medium text-muted-foreground block mb-1">
                 Caption
               </label>
               <Input
@@ -181,7 +192,7 @@ export function MediaUpload({ vaultId, onUploadSuccess }: MediaUploadProps) {
             </div>
 
             <div>
-              <label className="text-xs font-medium text-slate-700 block mb-1">
+              <label className="text-xs font-medium text-muted-foreground block mb-1">
                 When did this memory happen?
               </label>
               <Input
@@ -193,7 +204,7 @@ export function MediaUpload({ vaultId, onUploadSuccess }: MediaUploadProps) {
             </div>
 
             <div>
-              <label className="text-xs font-medium text-slate-700 block mb-1">
+              <label className="text-xs font-medium text-muted-foreground block mb-1">
                 Tags (comma-separated)
               </label>
               <Input
@@ -204,7 +215,7 @@ export function MediaUpload({ vaultId, onUploadSuccess }: MediaUploadProps) {
               />
             </div>
 
-            <p className="text-xs text-slate-500 italic">
+            <p className="text-xs text-muted-foreground italic">
               This information will be saved with your media and help organize your memories
             </p>
           </div>
@@ -220,7 +231,7 @@ export function MediaUpload({ vaultId, onUploadSuccess }: MediaUploadProps) {
           </Button>
         )}
 
-        <p className="text-xs text-slate-500 text-center">
+        <p className="text-xs text-muted-foreground text-center">
           All files are encrypted and stored securely
         </p>
       </CardContent>

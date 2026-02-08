@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, memo, useMemo } from "react";
+import { useState, memo, useMemo, useRef } from "react";
 import Image from "next/image";
 import { MediaItem, UserRole } from "@/lib/types";
 import { apiClient } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
+import { useSettings } from "@/context/settings-context";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,6 +40,9 @@ export const MediaCard = memo(function MediaCard({
   variant = "justified"
 }: MediaCardProps) {
   const [loading, setLoading] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const { autoPlay } = useSettings();
 
   // Aspect ratio calculation for justified layout
   const aspect = useMemo(() => {
@@ -60,15 +64,31 @@ export const MediaCard = memo(function MediaCard({
     }
   };
 
+  const handleMouseEnter = () => {
+    if (autoPlay && media.type === "video" && videoRef.current) {
+      videoRef.current.play().then(() => setIsPlaying(true)).catch(() => { });
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (media.type === "video" && videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+      setIsPlaying(false);
+    }
+  };
+
   return (
     <div
-      className={`group relative overflow-hidden bg-slate-900 cursor-pointer transition-all duration-300 hover:ring-2 hover:ring-indigo-500/50 ${variant === "square" ? "aspect-square rounded-xl" : ""} ${className}`}
+      className={`group relative overflow-hidden bg-muted cursor-pointer transition-all duration-300 hover:ring-2 hover:ring-violet-500/50 ${variant === "square" ? "aspect-square rounded-xl" : ""} ${className}`}
       style={{
         ...style,
         flexGrow: variant === "justified" ? aspect : undefined,
         flexBasis: variant === "justified" ? `${aspect * 180}px` : undefined,
       }}
       onClick={onOpen}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       {/* Media Content */}
       <div className="absolute inset-0">
@@ -84,13 +104,16 @@ export const MediaCard = memo(function MediaCard({
         ) : (
           <div className="relative w-full h-full">
             <video
+              ref={videoRef}
               src={media.url}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               preload="metadata"
               muted
+              playsInline
+              loop
             />
-            {/* Center Play Button for Video */}
-            <div className="absolute inset-0 flex items-center justify-center bg-black/10 group-hover:bg-black/30 transition-colors">
+            {/* Center Play Button for Video - hidden when playing */}
+            <div className={`absolute inset-0 flex items-center justify-center bg-black/10 group-hover:bg-black/30 transition-colors ${isPlaying ? "opacity-0" : "opacity-100"}`}>
               <div className="bg-white/20 p-2.5 rounded-full backdrop-blur-md border border-white/20 transform group-hover:scale-110 transition-transform">
                 <Play className="h-6 w-6 text-white fill-white" />
               </div>

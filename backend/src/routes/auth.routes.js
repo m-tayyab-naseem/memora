@@ -10,7 +10,13 @@ router.post('/register',
     [
         body('name').trim().notEmpty().withMessage('Name is required'),
         body('email').isEmail().withMessage('Valid email is required'),
-        body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters')
+        body('password')
+            .isLength({ min: 6 })
+            .withMessage('Password must be at least 6 characters')
+            .matches(/\d/)
+            .withMessage('Password must contain at least one number')
+            .matches(/[a-zA-Z]/)
+            .withMessage('Password must contain at least one letter')
     ],
     validate,
     authController.register

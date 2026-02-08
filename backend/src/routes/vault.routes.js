@@ -55,7 +55,7 @@ router.post('/:vaultId/members',
     [
         param('vaultId').isMongoId().withMessage('Invalid vault ID'),
         body('email').isEmail().withMessage('Valid email is required'),
-        body('role').isIn(['contributor', 'viewer']).withMessage('Invalid role')
+        body('role').isIn(['editor', 'viewer']).withMessage('Invalid role')
     ],
     validate,
     checkVaultAccess,
@@ -76,7 +76,7 @@ router.patch('/:vaultId/members/:userId',
     [
         param('vaultId').isMongoId().withMessage('Invalid vault ID'),
         param('userId').isMongoId().withMessage('Invalid user ID'),
-        body('role').isIn(['owner', 'contributor', 'viewer']).withMessage('Invalid role')
+        body('role').isIn(['owner', 'editor', 'viewer']).withMessage('Invalid role')
     ],
     validate,
     checkVaultAccess,

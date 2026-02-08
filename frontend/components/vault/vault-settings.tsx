@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { Vault, VaultMember, UserRole } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,9 +40,11 @@ interface VaultSettingsProps {
 }
 
 export function VaultSettings({ vault, onUpdate }: VaultSettingsProps) {
+    const router = useRouter();
     const { toast } = useToast();
     const [copied, setCopied] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState(vault.name);
     const [editDescription, setEditDescription] = useState(vault.description || "");
@@ -74,6 +77,23 @@ export function VaultSettings({ vault, onUpdate }: VaultSettingsProps) {
             toast({ title: "Update Failed", description: error.message, variant: "destructive" });
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    const handleDeleteVault = async () => {
+        try {
+            setIsDeleting(true);
+            await apiClient.deleteVault(vault.id);
+            toast({ title: "Vault Deleted", description: "The vault has been permanently removed." });
+
+            // Wait a moment for the user to see the toast before redirecting
+            setTimeout(() => {
+                router.push("/dashboard");
+            }, 1000);
+        } catch (error: any) {
+            toast({ title: "Deletion Failed", description: error.message, variant: "destructive" });
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -115,7 +135,7 @@ export function VaultSettings({ vault, onUpdate }: VaultSettingsProps) {
     const roleColors: Record<string, string> = {
         owner: "bg-violet-100 text-violet-700",
         editor: "bg-blue-100 text-blue-700",
-        viewer: "bg-slate-100 text-slate-700",
+        viewer: "bg-muted text-muted-foreground",
     };
 
     const availableRoles: UserRole[] = ["editor", "viewer"];
@@ -140,18 +160,18 @@ export function VaultSettings({ vault, onUpdate }: VaultSettingsProps) {
                     {/* Vault Info */}
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
-                            <h3 className="font-semibold text-slate-900">Vault Information</h3>
+                            <h3 className="font-semibold text-foreground">Vault Information</h3>
                             {isOwner && !isEditing && (
                                 <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)} className="h-8 gap-2">
                                     <Edit2 className="h-3.5 w-3.5" /> Edit
                                 </Button>
                             )}
                         </div>
-                        <div className="rounded-lg border border-slate-200 p-4 space-y-4">
+                        <div className="rounded-lg border border-border p-4 space-y-4">
                             {isEditing ? (
                                 <div className="space-y-4">
                                     <div className="space-y-2">
-                                        <label className="text-xs font-medium text-slate-600">Vault Name</label>
+                                        <label className="text-xs font-medium text-muted-foreground">Description</label>
                                         <Input
                                             value={editName}
                                             onChange={(e) => setEditName(e.target.value)}
@@ -183,12 +203,12 @@ export function VaultSettings({ vault, onUpdate }: VaultSettingsProps) {
                             ) : (
                                 <>
                                     <div>
-                                        <p className="text-xs font-medium text-slate-600 uppercase tracking-wider mb-1">Name</p>
-                                        <p className="text-sm font-semibold text-slate-900">{vault.name}</p>
+                                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Name</p>
+                                        <p className="text-sm font-semibold text-foreground">{vault.name}</p>
                                     </div>
                                     <div>
-                                        <p className="text-xs font-medium text-slate-600 uppercase tracking-wider mb-1">Description</p>
-                                        <p className="text-sm text-slate-700">{vault.description || "No description provided."}</p>
+                                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Description</p>
+                                        <p className="text-sm text-foreground/80">{vault.description || "No description provided."}</p>
                                     </div>
                                 </>
                             )}
@@ -197,16 +217,16 @@ export function VaultSettings({ vault, onUpdate }: VaultSettingsProps) {
 
                     {/* Invite Link - Only for owners and potentially editors? Keeping as is for now */}
                     <div className="space-y-3">
-                        <h3 className="font-semibold text-slate-900">Share Vault</h3>
+                        <h3 className="font-semibold text-foreground">Share Vault</h3>
                         <div className="space-y-2">
-                            <p className="text-xs text-slate-600 leading-relaxed">
+                            <p className="text-xs text-muted-foreground leading-relaxed">
                                 Use the link below or add members directly via email to share this vault.
                             </p>
                             <div className="flex gap-2">
                                 <Input
                                     value={inviteLink}
                                     readOnly
-                                    className="text-xs bg-slate-50"
+                                    className="text-xs bg-muted"
                                     onClick={(e) => e.currentTarget.select()}
                                 />
                                 <Button
@@ -225,7 +245,7 @@ export function VaultSettings({ vault, onUpdate }: VaultSettingsProps) {
                     {/* Direct Member Addition - Owner Only */}
                     {isOwner && (
                         <div className="space-y-3">
-                            <h3 className="font-semibold text-slate-900">Add Member</h3>
+                            <h3 className="font-semibold text-foreground">Add Member</h3>
                             <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
                                 <div className="sm:col-span-7">
                                     <Input
@@ -250,7 +270,7 @@ export function VaultSettings({ vault, onUpdate }: VaultSettingsProps) {
                                     <Button
                                         onClick={handleAddMember}
                                         disabled={isInviting || !inviteEmail}
-                                        className="w-full h-9 bg-indigo-600 hover:bg-indigo-700"
+                                        className="w-full h-9 bg-violet-600 hover:bg-violet-700"
                                         size="sm"
                                     >
                                         <UserPlus className="h-4 w-4" />
@@ -263,7 +283,7 @@ export function VaultSettings({ vault, onUpdate }: VaultSettingsProps) {
                     {/* Current Members */}
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                            <h3 className="font-semibold text-slate-900">Members ({vault.members?.length || 0})</h3>
+                            <h3 className="font-semibold text-foreground">Members ({vault.members?.length || 0})</h3>
                         </div>
                         <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
                             {vault.members?.map((member: VaultMember) => {
@@ -271,11 +291,11 @@ export function VaultSettings({ vault, onUpdate }: VaultSettingsProps) {
                                 return (
                                     <div
                                         key={member.id}
-                                        className="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-slate-50/50"
+                                        className="flex items-center justify-between p-3 border border-border rounded-xl bg-muted/30"
                                     >
                                         <div className="min-w-0 pr-2">
-                                            <p className="text-sm font-semibold text-slate-900 truncate">{member.name}</p>
-                                            <p className="text-xs text-slate-500 truncate">{member.email}</p>
+                                            <p className="text-sm font-semibold text-foreground truncate">{member.name}</p>
+                                            <p className="text-xs text-muted-foreground truncate">{member.email}</p>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             {isOwner && member.role !== 'owner' ? (
@@ -292,7 +312,7 @@ export function VaultSettings({ vault, onUpdate }: VaultSettingsProps) {
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50"
+                                                        className="h-8 w-8 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
                                                         onClick={() => handleRemoveMember(member.id)}
                                                     >
                                                         <UserMinus className="h-4 w-4" />
@@ -314,18 +334,18 @@ export function VaultSettings({ vault, onUpdate }: VaultSettingsProps) {
 
                     {/* Role Explanations */}
                     <div className="space-y-3">
-                        <h3 className="font-semibold text-slate-900">Role Permissions</h3>
+                        <h3 className="font-semibold text-foreground">Role Permissions</h3>
                         <div className="grid grid-cols-1 gap-2">
                             {[
                                 { role: "owner", desc: "Full control over vault settings, members, and all media." },
                                 { role: "editor", desc: "Can upload new media and delete existing media." },
                                 { role: "viewer", desc: "Can browse and view all media in the vault." },
                             ].map(({ role, desc }) => (
-                                <div key={role} className="flex gap-3 p-3 bg-slate-50 rounded-lg">
+                                <div key={role} className="flex gap-3 p-3 bg-muted rounded-lg">
                                     <span className={`h-fit px-2 py-0.5 text-[10px] font-bold rounded uppercase shrink-0 ${roleColors[role]}`}>
                                         {role}
                                     </span>
-                                    <p className="text-xs text-slate-600 leading-normal">{desc}</p>
+                                    <p className="text-xs text-muted-foreground leading-normal">{desc}</p>
                                 </div>
                             ))}
                         </div>
@@ -333,12 +353,12 @@ export function VaultSettings({ vault, onUpdate }: VaultSettingsProps) {
 
                     {/* Danger Zone */}
                     {isOwner && (
-                        <div className="space-y-3 border-t border-slate-200 pt-6">
+                        <div className="space-y-3 border-t border-border pt-6">
                             <h3 className="font-semibold text-red-600">Danger Zone</h3>
                             <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
                                 <Button
                                     variant="destructive"
-                                    className="w-full gap-2 bg-red-50 text-red-600 border-red-100 hover:bg-red-600 hover:text-white transition-all shadow-none"
+                                    className="w-full gap-2 bg-red-50 dark:bg-red-900/10 text-red-600 border-red-100 dark:border-red-900/20 hover:bg-red-600 hover:text-white transition-all shadow-none"
                                     onClick={() => setShowDeleteConfirm(true)}
                                 >
                                     <Trash2 className="h-4 w-4" />
@@ -352,9 +372,16 @@ export function VaultSettings({ vault, onUpdate }: VaultSettingsProps) {
                                         </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <div className="flex gap-3 justify-end mt-4">
-                                        <AlertDialogCancel className="rounded-full">Cancel</AlertDialogCancel>
-                                        <AlertDialogAction className="bg-red-600 hover:bg-red-700 rounded-full">
-                                            Delete Vault
+                                        <AlertDialogCancel className="rounded-full" disabled={isDeleting}>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction
+                                            className="bg-red-600 hover:bg-red-700 rounded-full"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                handleDeleteVault();
+                                            }}
+                                            disabled={isDeleting}
+                                        >
+                                            {isDeleting ? "Deleting..." : "Delete Vault"}
                                         </AlertDialogAction>
                                     </div>
                                 </AlertDialogContent>
