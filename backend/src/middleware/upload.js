@@ -26,11 +26,15 @@ const fileFilter = (req, file, cb) => {
     const allowedVideoTypes = ['video/mp4', 'video/mpeg', 'video/quicktime', 'video/webm', 'video/x-matroska', 'video/mkv'];
 
     const allowedTypes = [...allowedImageTypes, ...allowedVideoTypes];
+	const ext = path.extname(file.originalname).toLowerCase();
 
-    if (allowedTypes.includes(file.mimetype)) {
+    // Accept if the mimetype is correct, OR if it's an .mkv file (to bypass browser confusion)
+    if (allowedTypes.includes(file.mimetype) || ext === '.mkv') {
         cb(null, true);
     } else {
-        cb(new ValidationError('Invalid file type. Only images and videos are allowed.'), false);
+        // Log the actual mimetype the browser sent so you can debug future failed uploads
+        console.error(`Rejected file: ${file.originalname} | Mimetype sent by browser: ${file.mimetype}`);
+        cb(new ValidationError(`Invalid file type. Only images and videos are allowed.`), false);
     }
 };
 

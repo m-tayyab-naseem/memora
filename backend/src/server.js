@@ -19,7 +19,7 @@ connectDB();
 // Middleware
 app.use(helmet());
 app.use(cors({
-    origin: 'https://memora.saibihub.site'|| 'http://memore.saibihub.site' || 'http://localhost:3007',
+    origin: 'https://m-tayyab.dev/' || 'http://localhost:3000',
     credentials: true
 }));
 app.use(compression());
