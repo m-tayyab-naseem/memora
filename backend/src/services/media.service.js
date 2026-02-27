@@ -29,7 +29,18 @@ const uploadMedia = async (vaultId, userId, file, metadata = {}) => {
         ContentType: file.mimetype
     };
 
-    await s3Client.send(new PutObjectCommand(uploadParams));
+    try {
+        await s3Client.send(new PutObjectCommand(uploadParams));
+    } catch (error) {
+        logger.error('R2 upload failed', {
+            error: error.message,
+            stack: error.stack,
+            vaultId,
+            fileKey,
+            credentialError: error.name === 'CredentialsError' || error.message.includes('credential')
+        });
+        throw error;
+    }
 
     // 4. Determine media type (image or video)
     const mediaType = file.mimetype.startsWith('image/') ? 'image' : 'video';

@@ -1,6 +1,7 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const logger = require('../utils/logger');
 const { ValidationError } = require('../utils/errors');
 
 // Define the absolute path to the uploads directory (at project root)
@@ -26,15 +27,18 @@ const fileFilter = (req, file, cb) => {
     const allowedVideoTypes = ['video/mp4', 'video/mpeg', 'video/quicktime', 'video/webm', 'video/x-matroska', 'video/mkv'];
 
     const allowedTypes = [...allowedImageTypes, ...allowedVideoTypes];
-	const ext = path.extname(file.originalname).toLowerCase();
+    const ext = path.extname(file.originalname).toLowerCase();
 
     // Accept if the mimetype is correct, OR if it's an .mkv file (to bypass browser confusion)
     if (allowedTypes.includes(file.mimetype) || ext === '.mkv') {
         cb(null, true);
     } else {
         // Log the actual mimetype the browser sent so you can debug future failed uploads
-        console.error(`Rejected file: ${file.originalname} | Mimetype sent by browser: ${file.mimetype}`);
-        cb(new ValidationError(`Invalid file type. Only images and videos are allowed.`), false);
+        logger.warn(`File upload rejected: ${file.originalname} | Mimetype sent by browser: ${file.mimetype}`, {
+            fileName: file.originalname,
+            vaultId: req.params.vaultId
+        });
+        cb(new ValidationError('Invalid file type. Only images and videos are allowed.'), false);
     }
 };
 

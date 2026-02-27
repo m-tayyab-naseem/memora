@@ -13,9 +13,6 @@ const routes = require('./routes');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Connect to MongoDB
-connectDB();
-
 // Middleware
 app.use(helmet());
 app.use(cors({
@@ -60,10 +57,20 @@ app.use((req, res) => {
 // Error Handler
 app.use(errorHandler);
 
-// Start server
-app.listen(PORT, () => {
-    logger.info(`Memora API server running on port ${PORT}`);
-    logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
-});
+// Connect to MongoDB and start server
+const startServer = async () => {
+    try {
+        await connectDB();
+        app.listen(PORT, () => {
+            logger.info(`Memora API server running on port ${PORT}`);
+            logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+        });
+    } catch (error) {
+        logger.error('Failed to start server:', error);
+        process.exit(1);
+    }
+};
+
+startServer();
 
 module.exports = app;
