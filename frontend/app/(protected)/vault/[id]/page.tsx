@@ -4,7 +4,8 @@ import { useEffect, useState, use, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Vault, MediaItem, VaultMember } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Loader2, Sparkles, Search } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ChevronLeft, Search } from "lucide-react";
 import { MediaGallery } from "@/components/media/media-gallery";
 import { MediaUpload } from "@/components/media/media-upload";
 import { VaultMembers } from "@/components/vault/vault-members";
@@ -68,6 +69,18 @@ export default function VaultDetailPage({ params }: { params: Promise<{ id: stri
     fetchVaultData();
   }, [fetchVaultData]);
 
+  // Keep the media list current without a manual reload: poll periodically
+  // and refresh immediately whenever the tab regains focus.
+  useEffect(() => {
+    const intervalId = setInterval(fetchMedia, 30_000);
+    window.addEventListener("focus", fetchMedia);
+
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener("focus", fetchMedia);
+    };
+  }, [fetchMedia]);
+
   const vaultWithMembers = useMemo(() => {
     if (!vault) return null;
     return { ...vault, members };
@@ -75,12 +88,28 @@ export default function VaultDetailPage({ params }: { params: Promise<{ id: stri
 
   if (isLoading) {
     return (
-      <div className="flex h-[80vh] flex-col items-center justify-center gap-4 animate-in fade-in duration-500">
-        <div className="relative">
-          <Loader2 className="h-12 w-12 animate-spin text-indigo-500" />
-          <Sparkles className="h-6 w-6 text-violet-400 absolute -top-2 -right-2 animate-pulse" />
+      <div className="max-w-8xl mx-auto p-4 sm:p-8">
+        <Skeleton className="h-9 w-32 mb-8 rounded-full" />
+
+        <div className="mb-12 space-y-4">
+          <Skeleton className="h-6 w-28 rounded-full" />
+          <Skeleton className="h-10 w-1/2" />
+          <Skeleton className="h-4 w-1/3" />
         </div>
-        <p className="text-muted-foreground font-medium animate-pulse">Loading your vault memories...</p>
+
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
+          <div className="xl:col-span-4 space-y-4 order-first xl:order-last">
+            <Skeleton className="h-40 w-full rounded-2xl" />
+            <Skeleton className="h-56 w-full rounded-2xl" />
+          </div>
+          <div className="xl:col-span-8">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <Skeleton key={i} className="aspect-square w-full rounded-md" />
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
